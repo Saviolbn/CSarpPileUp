@@ -15,32 +15,35 @@
 // R6 mover C para B
 
 
+class Jogo(int numDiscos)
+{
+    public int[] TorreA { get; set; } = new int[numDiscos];
+    public int[] TorreB { get; set; } = new int[numDiscos];
+    public int[] TorreC { get; set; } = new int[numDiscos];
+}
+
 class Program
 {
     static void Main(string[] args)
     {
         int numDiscos = 5;
-        int[] torreA = new int[numDiscos];
-        int[] torreB = new int[numDiscos];
-        int[] torreC = new int[numDiscos];
 
-
-        void inicializarTorre()
+        void inicializarTorre(Jogo jogo)
         {
             for (int i = 0; i < numDiscos; i++)
             {
-                torreA[i] = numDiscos - i;
+                jogo.TorreA[i] = numDiscos - i;
             }
         };
 
         // quanto menor o valor retornado, melhor estamos
-        int avaliarSistema()
+        int avaliarSistema(Jogo jogo)
         {
             int h = 0;
 
             for (int i = numDiscos; i > 0; i--)
             {
-                if (torreC[i - 1] != i)
+                if (jogo.TorreC[i - 1] != i)
                 {
                     h++;
                 }
@@ -93,25 +96,26 @@ class Program
             return true;
         }
 
-        void imprimirSistema()
+        void imprimirSistema(Jogo jogo)
         {
-            Console.WriteLine($"{string.Join("", torreA)} {string.Join("", torreB)} {string.Join("", torreC)}");
+            Console.WriteLine($"{string.Join("", jogo.TorreA)} {string.Join("", jogo.TorreB)} {string.Join("", jogo.TorreC)}");
         }
 
+        Jogo jogo = new(numDiscos);
 
-        inicializarTorre();
-        imprimirSistema();
+        inicializarTorre(jogo);
+        imprimirSistema(jogo);
 
-        moverTopo(torreA, torreC);
-        imprimirSistema();
+        moverTopo(jogo.TorreA, jogo.TorreC);
+        imprimirSistema(jogo);
 
-        moverTopo(torreA, torreC);
-        imprimirSistema();
+        moverTopo(jogo.TorreA, jogo.TorreC);
+        imprimirSistema(jogo);
 
-        moverTopo(torreA, torreB);
-        imprimirSistema();
+        moverTopo(jogo.TorreA, jogo.TorreB);
+        imprimirSistema(jogo);
 
-        moverTopo(torreC, torreB);
-        imprimirSistema();
+        moverTopo(jogo.TorreC, jogo.TorreB);
+        imprimirSistema(jogo);
     }
 }
