@@ -1,4 +1,5 @@
-﻿// Torre de Hanoi
+﻿using System.Collections;
+// Torre de Hanoi
 // Há 3 torres A B C
 // Há Y discos na Torre A de maneira ordenada (em baixo está o maior)
 // Deve se mover todos os discos para a torre C mantendo a mesma ordem
@@ -14,22 +15,60 @@
 // R5 mover C para A
 // R6 mover C para B
 
-public class TreeNode<T>
-{
-    public T Data { get; set; }
-    public TreeNode<T>[] Children { get; set; }
 
-    public TreeNode(T data)
+
+public class Jogo(int[] torreA, int[] torreB, int[] torreC, int custo)
+{
+    public int[] TorreA { get; set; } = torreA;
+    public int[] TorreB { get; set; } = torreB;
+    public int[] TorreC { get; set; } = torreC;
+    public int Custo { get; set; } = custo;
+
+    public int lastMove { get; set; } = -1;
+
+    public bool isSolucao { get; set; } = false;
+}
+
+
+public class TreeNode
+{
+    public Jogo Jogo { get; set; }
+    public TreeNode[] Children { get; set; }
+
+
+
+    public TreeNode(Jogo jogo)
     {
-        Data = data;
-        Children = new TreeNode<T>[6];
+        Jogo = jogo;
+        Children = new TreeNode[6];
     }
 
-    public void AddChild(T data, int i)
+    public void AddChild(Jogo jogo, int i, Hashtable nodesVisitados)
     {
+        if (jogo == null)
+        {
+            return;
+        }
+
         if (i < 6) // Limiting to 6 children
         {
-            Children[i] = new TreeNode<T>(data);
+            // checa se ja ta na arvore
+            //if(nãoduplicado)
+            {
+                int hash = 0;
+                for (int j = 0; j < jogo.TorreA.Length; j++)
+                {
+                    hash += (jogo.TorreA[j] + j) * 1 + (jogo.TorreB[j] + j) * 10 + (jogo.TorreC[j] + j) * 100; // Example: calculate a simple hash based on TorreA values
+                }
+
+                if (nodesVisitados.ContainsKey(hash))
+                {
+                    return;
+                }
+
+                nodesVisitados.Add(hash, null);
+                Children[i] = new TreeNode(jogo);
+            }
         }
         else
         {
@@ -38,20 +77,15 @@ public class TreeNode<T>
     }
 }
 
-class Jogo(int[] torreA, int[] torreB, int[] torreC, int custo)
-{
-    public int[] TorreA { get; set; } = torreA;
-    public int[] TorreB { get; set; } = torreB;
-    public int[] TorreC { get; set; } = torreC;
-    public int Custo { get; set; } = custo;
-}
-
 class Program
 {
     static void Main(string[] args)
     {
         //Console.Clear();
         int numDiscos = 5;
+        Hashtable nodesVisitados = new Hashtable();
+
+        //
 
         void inicializarTorre(Jogo jogo)
         {
@@ -138,136 +172,189 @@ class Program
             Console.WriteLine($"A:{string.Join("", jogo.TorreA)} B:{string.Join("", jogo.TorreB)} C:{string.Join("", jogo.TorreC)} Custo:{jogo.Custo}");
         }
 
-        void calcularMovimento(TreeNode<Jogo> node, int profundidade)
+        void calcularMovimento(TreeNode node, int profundidade, int lastMove)
         {
             Tuple<bool, int[], int[]> resposta = Tuple.Create(false, new int[0], new int[0]);
 
-            resposta = moverTopo(node.Data.TorreA, node.Data.TorreB);
-            if (resposta.Item1)
+                resposta = moverTopo(node.Jogo.TorreA, node.Jogo.TorreB);
+                if (resposta.Item1)
+                {
+                    int[] otherArray = new int[numDiscos];
+                    Array.Copy(node.Jogo.TorreC, otherArray, numDiscos);
+
+                    Jogo novoJogo = new Jogo(
+                        resposta.Item2,
+                        resposta.Item3,
+                        otherArray,
+                        profundidade
+                    );
+                    novoJogo.Custo = novoJogo.Custo + 1;
+
+                    int heuristica = avaliarSistema(novoJogo);
+                    novoJogo.isSolucao = heuristica == 0;
+                    novoJogo.lastMove = lastMove;
+
+                    node.AddChild(novoJogo, 0, nodesVisitados);
+                }
+
+                resposta = moverTopo(node.Jogo.TorreA, node.Jogo.TorreC);
+                if (resposta.Item1)
+                {
+                    int[] otherArray = new int[numDiscos];
+                    Array.Copy(node.Jogo.TorreB, otherArray, numDiscos);
+
+                    Jogo novoJogo = new Jogo(
+                        resposta.Item2,
+                        otherArray,
+                        resposta.Item3,
+                        profundidade
+                    );
+                    novoJogo.Custo = novoJogo.Custo + 1;
+
+                    int heuristica = avaliarSistema(novoJogo);
+                    novoJogo.isSolucao = heuristica == 0;
+                    novoJogo.lastMove = lastMove;
+
+                    node.AddChild(novoJogo, 1, nodesVisitados);
+                }
+
+                resposta = moverTopo(node.Jogo.TorreB, node.Jogo.TorreA);
+                if (resposta.Item1)
+                {
+                    int[] otherArray = new int[numDiscos];
+                    Array.Copy(node.Jogo.TorreC, otherArray, numDiscos);
+
+                    Jogo novoJogo = new Jogo(
+                        resposta.Item3,
+                        resposta.Item2,
+                        otherArray,
+                        profundidade
+                    );
+                    novoJogo.Custo = novoJogo.Custo + 1;
+
+                    int heuristica = avaliarSistema(novoJogo);
+                    novoJogo.isSolucao = heuristica == 0;
+                    novoJogo.lastMove = lastMove;
+
+                    node.AddChild(novoJogo, 2, nodesVisitados);
+                }
+
+                resposta = moverTopo(node.Jogo.TorreB, node.Jogo.TorreC);
+                if (resposta.Item1)
+                {
+                    int[] otherArray = new int[numDiscos];
+                    Array.Copy(node.Jogo.TorreA, otherArray, numDiscos);
+
+                    Jogo novoJogo = new Jogo(
+                        otherArray,
+                        resposta.Item2,
+                        resposta.Item3,
+                        profundidade
+                    );
+                    novoJogo.Custo = novoJogo.Custo + 1;
+
+                    int heuristica = avaliarSistema(novoJogo);
+                    novoJogo.isSolucao = heuristica == 0;
+                    novoJogo.lastMove = lastMove;
+
+                    node.AddChild(novoJogo, 3, nodesVisitados);
+                }
+
+                resposta = moverTopo(node.Jogo.TorreC, node.Jogo.TorreA);
+                if (resposta.Item1)
+                {
+                    int[] otherArray = new int[numDiscos];
+                    Array.Copy(node.Jogo.TorreB, otherArray, numDiscos);
+
+                    Jogo novoJogo = new Jogo(
+                        resposta.Item3,
+                        otherArray,
+                        resposta.Item2,
+                        profundidade
+                    );
+                    novoJogo.Custo = novoJogo.Custo + 1;
+
+                    int heuristica = avaliarSistema(novoJogo);
+                    novoJogo.isSolucao = heuristica == 0;
+                    novoJogo.lastMove = lastMove;
+
+                    node.AddChild(novoJogo, 4, nodesVisitados);
+                }
+
+                resposta = moverTopo(node.Jogo.TorreC, node.Jogo.TorreB);
+                if (resposta.Item1)
+                {
+                    int[] otherArray = new int[numDiscos];
+                    Array.Copy(node.Jogo.TorreA, otherArray, numDiscos);
+
+                    Jogo novoJogo = new Jogo(
+                        otherArray,
+                        resposta.Item2,
+                        resposta.Item3,
+                        profundidade
+                    );
+                    novoJogo.Custo = novoJogo.Custo + 1;
+
+                    int heuristica = avaliarSistema(novoJogo);
+                    novoJogo.isSolucao = heuristica == 0;
+                    novoJogo.lastMove = lastMove;
+
+                    node.AddChild(novoJogo, 5, nodesVisitados);
+                }
+
+            //por profundidade
+            for (int i = 0; i < 6; i++)
             {
-                int[] otherArray = new int[numDiscos];
-                Array.Copy(node.Data.TorreC, otherArray, numDiscos);
-
-                Jogo novoJogo = new Jogo(
-                    resposta.Item2,
-                    resposta.Item3,
-                    otherArray,
-                    profundidade
-                );
-                novoJogo.Custo = novoJogo.Custo + 1 + avaliarSistema(novoJogo);
-                node.AddChild(novoJogo, 0);
+                if (node.Children[i] != null)
+                {
+                    calcularMovimento(node.Children[i], profundidade + 1, i);
+                }
             }
-
-            resposta = moverTopo(node.Data.TorreA, node.Data.TorreC);
-            if (resposta.Item1)
-            {
-                int[] otherArray = new int[numDiscos];
-                Array.Copy(node.Data.TorreB, otherArray, numDiscos);
-
-                Jogo novoJogo = new Jogo(
-                    resposta.Item2,
-                    otherArray,
-                    resposta.Item3,
-                    profundidade
-                );
-                novoJogo.Custo = novoJogo.Custo + 1 + avaliarSistema(novoJogo);
-                node.AddChild(novoJogo, 1);
-            }
-
-            resposta = moverTopo(node.Data.TorreB, node.Data.TorreA);
-            if (resposta.Item1)
-            {
-                int[] otherArray = new int[numDiscos];
-                Array.Copy(node.Data.TorreC, otherArray, numDiscos);
-
-                Jogo novoJogo = new Jogo(
-                    resposta.Item3,
-                    resposta.Item2,
-                    otherArray,
-                    profundidade
-                );
-                novoJogo.Custo = novoJogo.Custo + 1 + avaliarSistema(novoJogo);
-                node.AddChild(novoJogo, 2);
-            }
-
-            resposta = moverTopo(node.Data.TorreB, node.Data.TorreC);
-            if (resposta.Item1)
-            {
-                int[] otherArray = new int[numDiscos];
-                Array.Copy(node.Data.TorreA, otherArray, numDiscos);
-
-                Jogo novoJogo = new Jogo(
-                    otherArray,
-                    resposta.Item2,
-                    resposta.Item3,
-                    profundidade
-                );
-                novoJogo.Custo = novoJogo.Custo + 1 + avaliarSistema(novoJogo);
-                node.AddChild(novoJogo, 3);
-            }
-
-            resposta = moverTopo(node.Data.TorreC, node.Data.TorreA);
-            if (resposta.Item1)
-            {
-                int[] otherArray = new int[numDiscos];
-                Array.Copy(node.Data.TorreA, otherArray, numDiscos);
-
-                Jogo novoJogo = new Jogo(
-                    otherArray,
-                    resposta.Item2,
-                    resposta.Item3,
-                    profundidade
-                );
-                novoJogo.Custo = novoJogo.Custo + 1 + avaliarSistema(novoJogo);
-                node.AddChild(novoJogo, 4);
-            }
-
-            resposta = moverTopo(node.Data.TorreC, node.Data.TorreB);
-            if (resposta.Item1)
-            {
-                int[] otherArray = new int[numDiscos];
-                Array.Copy(node.Data.TorreA, otherArray, numDiscos);
-
-                Jogo novoJogo = new Jogo(
-                    otherArray,
-                    resposta.Item2,
-                    resposta.Item3,
-                    profundidade
-                );
-                novoJogo.Custo = novoJogo.Custo + 1 + avaliarSistema(novoJogo);
-                node.AddChild(novoJogo, 5);
-            }
-
-            // calcularMovimento()
         }
 
+        string lastMoveToTxt(int lastMove)
+        {
+            return lastMove switch
+            {
+                0 => "A -> B",
+                1 => "A -> C",
+                2 => "B -> A",
+                3 => "B -> C",
+                4 => "C -> A",
+                5 => "C -> B",
+                _ => "",
+            };
+        }
+
+        void imprimirSolucao(TreeNode node, List<string> texto)
+        {
+            List<string> newList = texto.Select(a => a).ToList(); ;
+            newList.Add($"LastMove: {lastMoveToTxt(node.Jogo.lastMove)} A:{string.Join("", node.Jogo.TorreA)} B:{string.Join("", node.Jogo.TorreB)} C:{string.Join("", node.Jogo.TorreC)} Custo:{node.Jogo.Custo}");
+            
+            if (node.Jogo.isSolucao)
+            {
+                Console.WriteLine("SOLUCAO");
+                for (int j = 0; j <= texto.Count; j++)
+                {
+                    Console.WriteLine(newList[j]);
+                }
+
+                return;
+            }
+
+            for (int i = 0; i < node.Children.Length; i++)
+            {
+                if (node.Children[i] != null)
+                {
+                    imprimirSolucao(node.Children[i], newList);
+                }
+            }
+        }
 
         Jogo jogo = new(new int[numDiscos], new int[numDiscos], new int[numDiscos], 0);
-        TreeNode<Jogo> arvore = new TreeNode<Jogo>(jogo);
+        TreeNode arvore = new TreeNode(jogo);
         inicializarTorre(jogo);
-
-        Console.WriteLine();
-        calcularMovimento(arvore, 0);
-        imprimirSistema(arvore.Data);
-        Console.WriteLine();
-        for (int i = 0; i < arvore.Children.Length; i++)
-        {
-            if (arvore.Children[i] != null)
-            {
-                imprimirSistema(arvore.Children[i].Data);
-            }
-        }
-
-        Console.WriteLine();
-        calcularMovimento(arvore.Children[0], 1);
-        imprimirSistema(arvore.Children[0].Data);
-        Console.WriteLine();
-        for (int i = 0; i < arvore.Children[0].Children.Length; i++)
-        {
-            if (arvore.Children[0].Children[i] != null)
-            {
-                imprimirSistema(arvore.Children[0].Children[i].Data);
-            }
-        }
+        calcularMovimento(arvore, 0, 0);
+        imprimirSolucao(arvore, new List<string>());
     }
 }
